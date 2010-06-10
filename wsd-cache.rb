@@ -5,11 +5,12 @@ require 'uri'
 require 'open-uri'
 require 'digest/md5'
 require 'fileutils'
+require 'cgi'
 
 set :public, 'cache/'
 
-post '/' do
-  text = params["text"]
+get '/:text' do
+  text = CGI::unescape(params["text"])
   hash = Digest::MD5.hexdigest(text)
 
   # If the graph has already been generated, update the mtime so that it
@@ -20,7 +21,7 @@ post '/' do
   end
 
   response = Net::HTTP.post_form(URI.parse('http://www.websequencediagrams.com/index.php'), 'style' => 'modern-blue', 'message' => text)
-  if response.body =~ /img: "(.+)"/
+  if response.body =~ /img: "(.+?)"/
     url = "http://www.websequencediagrams.com/#{$1}"
 
     File.open("#{options.public}#{hash}.png", "w+") { |f| f << open(url).read }
